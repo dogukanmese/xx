@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ödeme Sayfası</title>
+    <style>
+        /* Genel stil */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        /* Konteyner */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+
+        h3 {
+            font-size: 24px;
+            color: #444;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        .payment-info {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .payment-info p {
+            margin: 10px 0;
+        }
+
+        .price-info {
+            font-size: 20px;
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: bold;
+            margin-top: 30px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Form düzeni */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: #fafafa;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        input[type="email"]:focus {
+            border-color: #007bff;
+            background-color: #fff;
+            outline: none;
+        }
+
+        /* IBAN kısmı */
+        .info {
+            margin-bottom: 30px;
+        }
+
+        .info p {
+            margin: 10px 0;
+        }
+
+        .copy-btn {
+            background-color: #f0ad4e;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background-color: #ec971f;
+        }
+
+        .black-text {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Ödeme Bilgileri</h3>
+        <div class="payment-info">
+            <p><strong>Aracınız:</strong> <span id="vehicle"></span></p>
+            <p><strong>Nereden:</strong> <span id="from"></span></p>
+            <p><strong>Nereye:</strong> <span id="to"></span></p>
+            <p><strong>Gidiş Tarihi:</strong> <span id="departureDate"></span></p>
+            <p><strong>Dönüş Tarihi:</strong> <span id="returnDate"></span></p>
+            <p><strong>Kişi Sayısı:</strong> <span id="passengers"></span></p>
+            <p><strong>Mesafe:</strong> <span id="distance"></span> km</p>
+        </div>
+
+        <div class="price-info">
+            <p><strong>Fiyat:</strong> <span id="priceTL"></span> TL / <span id="priceEUR"></span> EUR / <span id="priceUSD"></span> USD</p>
+        </div>
+
+        <!-- Yolcu Detayları -->
+        <div class="form-group">
+            <label for="passenger-name">Ad Soyad:</label>
+            <input type="text" id="passenger-name" placeholder="Adınızı giriniz" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone-number">Telefon Numarası:</label>
+            <input type="text" id="phone-number" placeholder="Telefon numaranızı giriniz" required>
+        </div>
+    
+        <!-- Ödeme Bilgisi -->
+        <div class="info">
+            <strong>Ödeme Bilgisi:</strong>
+            <p>Ödeme Hesabı: <input type="text" id="iban" value="IBAN TR84 0011 1000 0000 0150 0177 41" readonly /></p>
+            <p><strong>Alıcı:</strong> <span class="black-text">Okan Akaslan</span></p>
+            <button class="copy-btn" onclick="copyIBAN()">IBAN'ı Kopyala</button>
+        </div>
+    
+        <!-- Ödeme Tamamla -->
+        <button class="btn" onclick="sendEmail()">Ödemeyi Tamamla ve Mail Gönder</button>
+    </div>
+    <script>
+       // Sayfa yüklendiğinde veriyi localStorage'dan alıyoruz
+       window.onload = function() {
+           let tripDetails = JSON.parse(localStorage.getItem('tripDetails'));
+
+           if (tripDetails) {
+               document.getElementById("vehicle").textContent = tripDetails.vehicle;
+               document.getElementById("from").textContent = tripDetails.from;
+               document.getElementById("to").textContent = tripDetails.to;
+               document.getElementById("departureDate").textContent = tripDetails.departureDate;
+               document.getElementById("returnDate").textContent = tripDetails.returnDate;
+               document.getElementById("passengers").textContent = tripDetails.passengers;
+               document.getElementById("distance").textContent = tripDetails.distance;
+
+               // Fiyatları hesapla
+               let priceTL = tripDetails.price;
+               let priceEUR = priceTL / 41;
+               let priceUSD = priceTL / 38;
+
+               document.getElementById("priceTL").textContent = priceTL.toFixed(2);
+               document.getElementById("priceEUR").textContent = priceEUR.toFixed(2);
+               document.getElementById("priceUSD").textContent = priceUSD.toFixed(2);
+           }
+       };
+
+        // IBAN Kopyalama Fonksiyonu
+        function copyIBAN() {
+            var copyText = document.getElementById("iban");
+            copyText.select();
+            document.execCommand("copy");
+            alert("IBAN kopyalandı: " + copyText.value);
+        }
+
+        // E-posta Gönderme Fonksiyonu
+        function sendEmail() {
+            let name = document.getElementById("passenger-name").value;
+            let phone = document.getElementById("phone-number").value;
+            let vehicle = document.getElementById("vehicle").textContent;
+            let from = document.getElementById("from").textContent;
+            let to = document.getElementById("to").textContent;
+            let departureDate = document.getElementById("departureDate").textContent;
+            let returnDate = document.getElementById("returnDate").textContent;
+            let priceTL = document.getElementById("priceTL").textContent;
+            let priceEUR = document.getElementById("priceEUR").textContent; // Euro fiyatı
+            let priceUSD = document.getElementById("priceUSD").textContent; // Dolar fiyatı
+            let passengers = document.getElementById("passengers").textContent;  // Kişi sayısını alıyoruz
+
+            let emailBody = `
+                Yeni Ödeme Bilgisi:
+                Ad Soyad: ${name}
+                Telefon: ${phone}
+                Araç: ${vehicle}
+                Nereden: ${from}
+                Nereye: ${to}
+                Gidiş Tarihi: ${departureDate}
+                Dönüş Tarihi: ${returnDate}
+                Kişi Sayısı: ${passengers}  
+                Fiyat (TL): ${priceTL} TL
+                Fiyat (EUR): ${priceEUR} EUR
+                Fiyat (USD): ${priceUSD} USD
+            `;
+            let mailtoLink = `mailto:okanakaslan51@icloud.com?subject=Yeni%20Ödeme%20Bilgisi&body=${encodeURIComponent(emailBody)}`;
+            window.location.href = mailtoLink;
+        }
+    </script>
+</body>
+</html>
